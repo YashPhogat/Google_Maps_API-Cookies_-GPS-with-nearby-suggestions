@@ -1,0 +1,163 @@
+<!--
+In this web app i have used the google maps api and the places library of the api.
+1.First i set a default location for maps api with certain zoom value and map type
+2.Then i used the geolocation service to obtain the current coordinates of the device and set it as the centre for the map
+3.Now using the places library, i did a search of nearby places on the basis of prominence of the place around.
+4. Now create markers for the nearby places and display the images of the locations on marker click.
+5.Using cookies store the previous location of the device.
+
+Yash Phogat
+National Institute of Technology, Delhi
+-->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Simple Map</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+      
+    <div id="map"></div>
+      
+    <script>
+        //*************************************
+      var map;
+      function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: {lat: 28.6139, lng: 77.2090},             //getting default location for maps
+          zoom: 8,                                          //default zoom
+    mapTypeId : google.maps.MapTypeId.HYBRID               //default maptype
+        });
+          //*************************************Get the current location of my device************************
+           var infoWindow = new google.maps.InfoWindow({map: map});
+            
+        // ****************Geolocation.
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function(position) {         //getting current position
+         var pos = {
+              lat: position.coords.latitude,                                    //device latitude
+              lng: position.coords.longitude                                    //device longitude
+            };
+
+            infoWindow.setPosition(pos);
+              infoWindow.setContent("<p>"+'Your Location'+"<br />"+'Latitude: '+pos.lat +"<br />"+'Longitude: '+ pos.lng+"</p>");
+            map.setCenter(pos);
+              
+              //*****************************************Display places nearby the current device location*************
+              var infowindow = new google.maps.InfoWindow();
+        var service = new google.maps.places.PlacesService(map);            //Using places library in Google Maps API
+        service.nearbySearch({
+          location: map.getCenter(),                                        //Central location(i.e our current location) for the reference of places library
+          radius:2000                                                       //limiting radius 
+            
+        }, callback);                                                       //Provide this function's results to callback function.Results identified using                                                                         the prominence of the places nearby 
+              
+      function callback(results, status) {                                  //Action to occur when reference location identified
+        if (status === google.maps.places.PlacesServiceStatus.OK) {         //If any prominent place identified
+          for (var i = 0; i < results.length; i++) {
+            createMarker(results[i]);                                       //function call to create marker for every place identified
+          }
+        }   
+      }
+
+      function createMarker(place) {                                    //function to create markers
+        var placeLoc = place.geometry.location;
+        var marker = new google.maps.Marker({
+          map: map,
+          position: place.geometry.location
+        });
+
+        google.maps.event.addListener(marker, 'click', function() {         //event to happen when marker clicked
+        infowindow.setContent(place.name);                                  //Display place name
+        infowindow.open(map, this);
+        findPhoto(place);                                                   //function call to Search internet for any photo of the place 
+            
+        });
+      }
+      
+function findPhoto(place) {                                                 //findPhoto function
+  var photos = place.photos;                                                // save photos found for the respective place
+  if (!photos) {  return;  }
+    
+
+  var marker = new google.maps.Marker({                                     //Display first photo from the photos array at the place location as marker icon
+    map: map,
+    position: place.geometry.location,
+    title: place.name,
+    icon: photos[0].getUrl({'maxWidth': 70, 'maxHeight': 70})
+  });
+ //********Set Cookie to remember last location ************
+    var mapcenter=map.getCenter();                                      //get current center that is device location in a variable
+    var maplat=mapcenter.lat();                                 
+    var maplng=mapcenter.lng();
+    var cookiestr=maplat+"|"+maplng;                                    //create cookie string for last location latitude and longitude
+    var exp=new Date();
+    exp.setTime(exp.getTime()+(1000*60*60*24*2));                       //setting expiry time to two days
+    setCookie("DaftLogicGMRLL",cookiestr,exp);                          //setCookie function call for getting lat and long from document
+    var loadstr=getCookie("DaftLogicGMRLL");
+    var str=loadstr.split("|");
+    var newinfowindow=new google.maps.InfoWindow();
+    
+    newinfowindow.setContent("<p>Your previous location<br />"+"Latitude"+str[0]+"<br />Longitude"+str[1]+"</p>");
+    
+    function setCookie(name, value, expires)                            //setCookie function
+  {
+  document.cookie = name + "=" + escape(value) + "; path=/" + ((expires == null) ? "" : "; expires=" + expires.toGMTString());
+  }
+
+function getCookie(c_name)                                              //getCookie function
+  {  if (document.cookie.length>0)
+  {
+  c_start=document.cookie.indexOf(c_name + "=");
+  if (c_start!=-1)
+  { 
+  c_start=c_start + c_name.length+1; 
+  c_end=document.cookie.indexOf(";",c_start);
+  if (c_end==-1) c_end=document.cookie.length;
+  return unescape(document.cookie.substring(c_start,c_end));
+  } 
+  }
+  return "";
+  }
+//**********************************************************    
+ }
+
+          }, function() {                                               //function on geolocation access denial
+            handleLocationError(true, infoWindow, map.getCenter());
+          });
+        } 
+          else {
+          // Browser doesn't support Geolocation
+          handleLocationError(false, infoWindow, map.getCenter());
+        }        
+}
+
+      function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+        infoWindow.setPosition(pos);
+        infoWindow.setContent(browserHasGeolocation ?
+         'Error: The Geolocation service failed.' :
+        'Error: Your browser doesn\'t support geolocation.');
+        
+      }
+    </script>
+      
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAaEjkzyFI5hIkLB1TM7bP09v_dYhlF3Cc&libraries=places&callback=initMap"
+    async defer></script>
+  
+
+  </body>
+</html>
+
+
+
